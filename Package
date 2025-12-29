@@ -1,0 +1,32 @@
+// ===== package.json ===== { "name": "frankie-md-bot", "version": "1.0.0", "description": "Frankie MD WhatsApp Bot", "main": "index.js", "scripts": { "start": "node index.js" }, "dependencies": { "@adiwajshing/baileys": "^5.0.1", "qrcode-terminal": "^0.12.0" } }
+
+// ===== index.js ===== const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } = require("@adiwajshing/baileys"); const { Boom } = require("@hapi/boom"); const qrcode = require("qrcode-terminal");
+
+async function startBot() { const { state, saveCreds } = await useMultiFileAuthState("session"); const { version } = await fetchLatestBaileysVersion(); const sock = makeWASocket({ version, auth: state, printQRInTerminal: true });
+
+// Save session automatically
+sock.ev.on("creds.update", saveCreds);
+
+// Auto reply to messages
+sock.ev.on("messages.upsert", async (m) => {
+    const msg = m.messages[0];
+    if (!msg.message || msg.key.fromMe) return;
+
+    const from = msg.key.remoteJid;
+    const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
+
+    // Auto reply
+    await sock.sendMessage(from, { text: `Hi! Frankie MD bot received: "${text}"` });
+});
+
+// Auto react to status updates (simplified)
+sock.ev.on("presence.update", (update) => {
+    console.log("Presence update:", update);
+    // Add reaction logic here if needed
+});
+
+console.log("Frankie MD Bot is now online!");
+
+}
+
+startBot().catch(err => console.log(err));
